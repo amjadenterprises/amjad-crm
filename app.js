@@ -31,41 +31,33 @@ async function offerLegacyImport(){try{if(!navigator.onLine)return;const local=a
 function notify(title,body,tag){if(Notification.permission!=='granted')return;if(navigator.serviceWorker?.controller){navigator.serviceWorker.ready.then(r=>r.showNotification(title,{body,tag,icon:'./icons/icon-192.png',badge:'./icons/icon-192.png'})).catch(()=>new Notification(title,{body,tag}))}else new Notification(title,{body,tag})}
 function checkReminders(){if(!user||!('Notification'in window)||Notification.permission!=='granted')return;const due=records.filter(x=>['OVERDUE','DUE TODAY'].includes(alertFor(x)));const key=today();for(const x of due.slice(0,10)){const k='ae_due_'+x.id;if(localStorage.getItem(k)!==key){notify(`Follow-up: ${x.customer}`,`${x.product} · ${alertFor(x)} · ${x.phone}`,`ae-demand-${x.id}`);localStorage.setItem(k,key)}}const now=new Date();if(now.getHours()>=9&&localStorage.getItem('ae_daily_notice')!==key){notify('AMJAD ENTERPRISES — Daily summary',`${records.filter(x=>!['Purchased','Cancelled'].includes(x.status)).length} open customer demands. Review today's follow-ups.`,'ae-daily');localStorage.setItem('ae_daily_notice',key)}if(reminderTimer)clearTimeout(reminderTimer);const next=new Date();next.setHours(9,0,0,0);if(next<=now)next.setDate(next.getDate()+1);reminderTimer=setTimeout(checkReminders,next-now)}
 $('enableNotifyBtn').onclick=async()=>{if(!('Notification'in window)){toast('Notifications are not supported in this browser');return}const p=await Notification.requestPermission();toast(p==='granted'?'Reminders enabled':'Notification permission not granted');checkReminders()};
-function function startUser(u) {
-  user = u;
+
+offerLegacyImport();
+}
+function startUser(u) {
+  user=u;
   $('loginView').classList.add('hidden');
   $('appView').classList.remove('hidden');
   $('signOutBtn').classList.remove('hidden');
+  $('syncState').textContent='● Checking cloud...';
+  if(stopSnapshot) stopSnapshot();
 
-  $('syncState').textContent = '● Checking cloud...';
+  stopSnapshot=onSnapshot(demandsRef(),{includeMetadataChanges:true},snap=>{
+    records=snap.docs.map(d=>({...d.data(),id:d.id}));
+    render();
+    checkReminders();
 
-  if (stopSnapshot) stopSnapshot();
-
-  stopSnapshot = onSnapshot(
-    demandsRef(),
-    { includeMetadataChanges: true },
-    snap => {
-      records = snap.docs.map(d => ({
-        ...d.data(),
-        id: d.id
-      }));
-
-      render();
-      checkReminders();
-
-      if (snap.metadata.hasPendingWrites) {
-        $('syncState').textContent = '● Uploading...';
-      } else if (snap.metadata.fromCache) {
-        $('syncState').textContent = '● Local only — waiting for cloud';
-      } else {
-        $('syncState').textContent = '● Cloud verified';
-      }
-    },
-    err => {
-      toast('Cloud sync error: ' + err.message);
-      $('syncState').textContent = '● Sync issue';
+    if(snap.metadata.hasPendingWrites) {
+      $('syncState').textContent='● Uploading...';
+    } else if(snap.metadata.fromCache) {
+      $('syncState').textContent='● Local only — waiting for cloud';
+    } else {
+      $('syncState').textContent='● Cloud verified';
     }
-  );
+  },err=>{
+    toast('Cloud sync error: '+err.message);
+    $('syncState').textContent='● Sync issue';
+  });
 
   offerLegacyImport();
 }
