@@ -20,7 +20,17 @@ function clearForm(){$('demandForm').reset();$('recordId').value='';$('formTitle
 function fill(x){$('recordId').value=x.id;['customer','phone','product','category','size','colour','quantity','budget','priority','followup','status','lastContact','notes'].forEach(k=>$(k).value=x[k]??'');$('formTitle').textContent='Edit Customer Demand';$('formPanel').scrollIntoView({behavior:'smooth'})}
 $('demandForm').onsubmit=async e=>{e.preventDefault();if(!user)return;const id=$('recordId').value||crypto.randomUUID();const old=records.find(x=>x.id===id);const item={id,created:old?.created||Date.now(),updated:Date.now()};['customer','phone','product','category','size','colour','quantity','budget','priority','followup','status','lastContact','notes'].forEach(k=>item[k]=$(k).value.trim());item.quantity=Number(item.quantity||1);item.budget=Number(item.budget||0);try{await setDoc(doc(db,'users',user.uid,'demands',id),item);clearForm();toast('Saved — syncing automatically')}catch(err){toast('Could not save: '+err.message)}};
 $('clearBtn').onclick=clearForm;$('newBtn').onclick=()=>{clearForm();$('customer').focus();$('formPanel').scrollIntoView({behavior:'smooth'})};['search','statusFilter','alertFilter'].forEach(id=>$(id).addEventListener('input',render));
-$('googleBtn').onclick=async()=>{if(!configured){$('setupWarning').classList.remove('hidden');return}try{await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){toast('Sign-in failed: '+e.message)}};
+$('googleBtn').onclick=async()=>{
+  if(!configured){
+    $('setupWarning').classList.remove('hidden');
+    return;
+  }
+  try{
+    await signInWithRedirect(auth,new GoogleAuthProvider());
+  }catch(e){
+    toast('Sign-in failed: '+e.message);
+  }
+};
 $('signOutBtn').onclick=()=>signOut(auth);
 $('exportBtn').onclick=()=>download('amjad-enterprises-backup-'+today()+'.json',JSON.stringify({app:'AMJAD ENTERPRISES CRM',version:2,exported:new Date().toISOString(),demands:records},null,2),'application/json');
 $('importBtn').onclick=()=>$('restoreFile').click();$('restoreFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const o=JSON.parse(await f.text());if(!Array.isArray(o.demands))throw Error('Invalid backup file');if(!confirm(`Import ${o.demands.length} records into your cloud account? Existing records with the same IDs will be replaced.`))return;for(const x of o.demands){if(x.id)await setDoc(doc(db,'users',user.uid,'demands',x.id),x)}toast('Backup imported; syncing')}catch(err){alert('Import failed: '+err.message)}e.target.value=''};
