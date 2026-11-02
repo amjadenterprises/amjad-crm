@@ -43,7 +43,6 @@ function checkReminders(){if(!user||!('Notification'in window)||Notification.per
 $('enableNotifyBtn').onclick=async()=>{if(!('Notification'in window)){toast('Notifications are not supported in this browser');return}const p=await Notification.requestPermission();toast(p==='granted'?'Reminders enabled':'Notification permission not granted');checkReminders()};
 
 offerLegacyImport();
-}
 function startUser(u) {
   user=u;
   $('loginView').classList.add('hidden');
