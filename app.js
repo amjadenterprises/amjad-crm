@@ -42,7 +42,7 @@ function notify(title,body,tag){if(Notification.permission!=='granted')return;if
 function checkReminders(){if(!user||!('Notification'in window)||Notification.permission!=='granted')return;const due=records.filter(x=>['OVERDUE','DUE TODAY'].includes(alertFor(x)));const key=today();for(const x of due.slice(0,10)){const k='ae_due_'+x.id;if(localStorage.getItem(k)!==key){notify(`Follow-up: ${x.customer}`,`${x.product} · ${alertFor(x)} · ${x.phone}`,`ae-demand-${x.id}`);localStorage.setItem(k,key)}}const now=new Date();if(now.getHours()>=9&&localStorage.getItem('ae_daily_notice')!==key){notify('AMJAD ENTERPRISES — Daily summary',`${records.filter(x=>!['Purchased','Cancelled'].includes(x.status)).length} open customer demands. Review today's follow-ups.`,'ae-daily');localStorage.setItem('ae_daily_notice',key)}if(reminderTimer)clearTimeout(reminderTimer);const next=new Date();next.setHours(9,0,0,0);if(next<=now)next.setDate(next.getDate()+1);reminderTimer=setTimeout(checkReminders,next-now)}
 $('enableNotifyBtn').onclick=async()=>{if(!('Notification'in window)){toast('Notifications are not supported in this browser');return}const p=await Notification.requestPermission();toast(p==='granted'?'Reminders enabled':'Notification permission not granted');checkReminders()};
 
-offerLegacyImport();
+
 function startUser(u) {
   user=u;
   $('loginView').classList.add('hidden');
@@ -70,6 +70,7 @@ function startUser(u) {
 
   offerLegacyImport();
 }
+  
 function endUser() {user=null;records=[];if(stopSnapshot)stopSnapshot();stopSnapshot=null;$('loginView').classList.remove('hidden');$('appView').classList.add('hidden');$('signOutBtn').classList.add('hidden');$('syncState').textContent='Not signed in'}
 window.addEventListener('online',()=>{$('syncState').textContent='● Reconnecting'});window.addEventListener('offline',()=>{$('syncState').textContent='● Offline — changes queued'});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
