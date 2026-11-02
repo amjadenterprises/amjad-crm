@@ -1,0 +1,52 @@
+AMJAD ENTERPRISES CRM v2 — SETUP GUIDE
+
+WHAT THIS PACKAGE DOES
+- Google sign-in (one private account per Google user)
+- Automatic cloud sync through Firebase Firestore
+- Offline cache/queued writes on supported browsers (Chrome/Edge)
+- Daily and due/overdue reminder notifications while the app is open or reopened
+- Android installable PWA and Windows browser install
+- JSON backup/restore and CSV export
+
+IMPORTANT LIMITATIONS
+1. Cloud sync is NOT active until you create/configure a Firebase project and publish this folder over HTTPS.
+2. Browser notifications are not guaranteed at an exact time when the app/browser is fully closed. The app checks and displays a daily summary and individual due/overdue alerts while open and when reopened (up to 10 individual alerts per check). Reliable closed-app scheduled push notifications need extra push-server setup.
+3. This package contains no customer data and no Firebase secret. Never put a Firebase service-account private key in this folder.
+4. Firebase free-tier quotas and terms can change; monitor usage in Firebase Console.
+
+PART A — CREATE YOUR FREE FIREBASE PROJECT
+1. On your PC, open https://console.firebase.google.com/ and sign in with your Google account.
+2. Click Add project. Name it amjad-enterprises-crm. Google Analytics can be disabled.
+3. In Project Overview, click the Web (</>) icon to add a web app. Give it the name AMJAD ENTERPRISES CRM. Register the app.
+4. Firebase will show a firebaseConfig object. Copy its values into firebase-config.js in the matching fields. Do not share your config file publicly if you later add other sensitive settings; the Firebase web config itself is designed to be public, but database rules must be secure.
+
+PART B — TURN ON GOOGLE SIGN-IN
+1. Firebase Console → Build → Authentication → Get started.
+2. Sign-in method → Google → Enable → choose your support email → Save.
+3. Authentication → Settings → Authorized domains. Add your GitHub Pages domain, for example amjadenterprises.github.io.
+
+PART C — CREATE THE DATABASE AND LOCK IT
+1. Firebase Console → Build → Firestore Database → Create database. Choose Production mode. Select a nearby region such as asia-south1 (Mumbai) if offered.
+2. Open the Rules tab. Replace the rules with the complete contents of firestore.rules in this package. Replace REPLACE_WITH_YOUR_GOOGLE_EMAIL with the exact Google account email you will use to sign in, keeping the quotation marks. Click Publish.
+3. These rules restrict access to your one approved Google email and its own /users/{uid}/demands records. The CRM does not expose your records to another user. If the email placeholder is not replaced correctly, sign-in will work but database reads/writes will be denied.
+
+PART D — PUBLISH ON GITHUB PAGES
+1. Unzip this package on your PC.
+2. Upload the contents of this folder (index.html, app.js, firebase-config.js, manifest.webmanifest, sw.js, icons folder) into the folder/repository you choose for the CRM. Keep the files together.
+3. Commit the changes and wait for GitHub Pages to publish. Use an HTTPS URL.
+4. Open the published URL in Chrome on Android and sign in with your Google account.
+5. Tap Chrome ⋮ → Install app (or Add to Home screen). On Windows, open the same URL in Chrome/Edge and use the Install icon/menu.
+
+PART E — REMINDERS
+1. Open the CRM, sign in, and tap Enable reminders. Allow notifications.
+2. Set follow-up dates on customer demands. The dashboard will count overdue and due-today follow-ups.
+3. Keep the app open during the day or reopen it to run reminder checks. Current version cannot promise alerts while the app is fully closed.
+
+MIGRATING YOUR OLD LOCAL APP DATA
+After signing in, the app checks this browser for records saved by the earlier offline-only CRM. If found and your cloud account is empty, it asks whether to import them. You can also use Backup JSON in the old app and Restore JSON in this version.
+
+SECURITY
+- Keep the Firebase Firestore rules exactly as provided unless you understand the security impact.
+- Never use public/Anyone access for customer records.
+- Do not share Google sign-in access or backup files.
+- If you use a public GitHub repository, remember firebase-config.js is visible. Firebase web config is not an admin secret; the Firestore security rules and Google authentication are what protect the data.
