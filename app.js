@@ -18,7 +18,47 @@ for(const x of list){const tr=document.createElement('tr'),tds=Array.from({lengt
 }
 function clearForm(){$('demandForm').reset();$('recordId').value='';$('formTitle').textContent='Add Customer Demand';$('quantity').value=1}
 function fill(x){$('recordId').value=x.id;['customer','phone','product','category','size','colour','quantity','budget','priority','followup','status','lastContact','notes'].forEach(k=>$(k).value=x[k]??'');$('formTitle').textContent='Edit Customer Demand';$('formPanel').scrollIntoView({behavior:'smooth'})}
-$('demandForm').onsubmit=async e=>{e.preventDefault();if(!user)return;const id=$('recordId').value||crypto.randomUUID();const old=records.find(x=>x.id===id);const item={id,created:old?.created||Date.now(),updated:Date.now()};['customer','phone','product','category','size','colour','quantity','budget','priority','followup','status','lastContact','notes'].forEach(k=>item[k]=$(k).value.trim());item.quantity=Number(item.quantity||1);item.budget=Number(item.budget||0);try{await setDoc(doc(db,'users',user.uid,'demands',id),item);clearForm();toast('Saved — syncing automatically')}catch(err){toast('Could not save: '+err.message)}};
+$('demandForm').onsubmit=async e=>{
+  e.preventDefault();
+  if(!user)return;
+
+  const id=$('recordId').value||crypto.randomUUID();
+  const old=records.find(x=>x.id===id);
+  const item={id,created:old?.created||Date.now(),updated:Date.now()};
+
+  ['customer','phone','product','category','size','colour','quantity','budget','priority','followup','status','lastContact','notes']
+    .forEach(k=>item[k]=$(k).value.trim());
+
+  item.quantity=Number(item.quantity||1);
+  item.budget=Number(item.budget||0);
+
+  try{
+    $('syncState').textContent='● Sending to cloud...';
+
+    let timer;
+    const result=await Promise.race([
+      setDoc(doc(db,'users',user.uid,'demands',id),item)
+        .then(()=> 'saved'),
+      new Promise(resolve=>{
+        timer=setTimeout(()=>resolve('timeout'),15000);
+      })
+    ]);
+
+    clearTimeout(timer);
+
+    if(result==='timeout'){
+      $('syncState').textContent='● Cloud write pending';
+      toast('Firebase has not responded after 15 seconds');
+      return;
+    }
+
+    clearForm();
+    toast('Cloud save successful!');
+  }catch(err){
+    $('syncState').textContent='● Sync error';
+    toast('Firebase error: '+err.code+' — '+err.message);
+  }
+};
 $('clearBtn').onclick=clearForm;$('newBtn').onclick=()=>{clearForm();$('customer').focus();$('formPanel').scrollIntoView({behavior:'smooth'})};['search','statusFilter','alertFilter'].forEach(id=>$(id).addEventListener('input',render));
 $('googleBtn').onclick=async()=>{
   if(!configured){
