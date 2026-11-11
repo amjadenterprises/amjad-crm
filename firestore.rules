@@ -4,7 +4,7 @@ service cloud.firestore {
 
     function isOwner() {
       return request.auth != null
-        && request.auth.token.email == "example@gmail.com"
+        && request.auth.token.email == "amjadenterprises07@gmail.com"
         && request.auth.token.email_verified == true;
     }
 
